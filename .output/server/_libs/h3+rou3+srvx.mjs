@@ -109,7 +109,7 @@ var HTTPError = class HTTPError extends Error {
 	body;
 	unhandled;
 	static isError(input) {
-		return input instanceof Error && input?.name === "HTTPError";
+		return input instanceof Error && input?.name === "HTTPError" && input.status > 99;
 	}
 	static status(status, statusText, details) {
 		return new HTTPError({
@@ -467,14 +467,12 @@ var H3Core = class {
 	"~addRoute"(_route) {
 		this["~routes"].push(_route);
 	}
-	"~getMiddleware"(_event, route) {
-		const routeMiddleware = route?.data.middleware;
-		const globalMiddleware = this["~middleware"];
-		return routeMiddleware ? [...globalMiddleware, ...routeMiddleware] : globalMiddleware;
+	"~getMiddleware"(_event, _route) {
+		return this["~middleware"];
 	}
 };
 function createDispatcher(app) {
-	if (app["~getMiddleware"] !== H3Core.prototype["~getMiddleware"]) return (event, route) => callMiddleware(event, app["~getMiddleware"](event, route), route?.data.handler || NoHandler);
+	if (app["~getMiddleware"] !== H3Core.prototype["~getMiddleware"]) return (event, route) => callMiddleware(event, app["~getMiddleware"](event, route || void 0), routeHandler(route));
 	const middleware = app["~middleware"];
 	if (middleware.length === 0) return (event, route) => routeHandler(route)(event);
 	const composed = app["~composed"] ??= composeMiddleware(middleware);
